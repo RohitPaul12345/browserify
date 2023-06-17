@@ -1,43 +1,44 @@
-var path = require('path');
-var mdeps = require('module-deps');
-var depsSort = require('deps-sort');
-var bpack = require('browser-pack');
-var insertGlobals = require('insert-module-globals');
-var syntaxError = require('syntax-error');
+// Prefer not to USE var because of issue in block scope and functional scope
+let path = require('path');
+let mdeps = require('module-deps');
+let depsSort = require('deps-sort');
+let bpack = require('browser-pack');
+let insertGlobals = require('insert-module-globals');
+let syntaxError = require('syntax-error');
 
-var builtins = require('./lib/builtins.js');
+let builtins = require('./lib/builtins.js');
 
-var splicer = require('labeled-stream-splicer');
-var through = require('through2');
-var concat = require('concat-stream');
+let splicer = require('labeled-stream-splicer');
+let through = require('through2');
+let concat = require('concat-stream');
 
-var inherits = require('inherits');
-var EventEmitter = require('events').EventEmitter;
-var xtend = require('xtend');
-var isArray = Array.isArray;
-var defined = require('defined');
-var has = require('has');
-var sanitize = require('htmlescape').sanitize;
-var shasum = require('shasum-object');
+let inherits = require('inherits');
+let EventEmitter = require('events').EventEmitter;
+let xtend = require('xtend');
+let isArray = Array.isArray;
+let defined = require('defined');
+let has = require('has');
+let sanitize = require('htmlescape').sanitize;
+let shasum = require('shasum-object');
 
-var bresolve = require('browser-resolve');
-var resolve = require('resolve');
+let bresolve = require('browser-resolve');
+let resolve = require('resolve');
 
-var readonly = require('read-only-stream');
+let readonly = require('read-only-stream');
 
 module.exports = Browserify;
 inherits(Browserify, EventEmitter);
 
-var fs = require('fs');
-var path = require('path');
-var cachedPathRelative = require('cached-path-relative');
+let fs = require('fs');
+let path = require('path');
+let cachedPathRelative = require('cached-path-relative');
 
-var paths = {
+let paths = {
     empty: path.join(__dirname, 'lib/_empty.js')
 };
 
 function Browserify (files, opts) {
-    var self = this;
+    let self = this;
     if (!(this instanceof Browserify)) return new Browserify(files, opts);
     if (!opts) opts = {};
     
@@ -84,7 +85,7 @@ function Browserify (files, opts) {
     self._entryOrder = 0;
     self._ticked = false;
 
-    var browserField = opts.browserField
+    let browserField = opts.browserField
     self._bresolve = browserField === false
         ? function (id, opts, cb) {
             if (!opts.basedir) opts.basedir = path.dirname(opts.filename)
@@ -99,7 +100,7 @@ function Browserify (files, opts) {
     ;
     self._syntaxCache = {};
 
-    var ignoreTransform = [].concat(opts.ignoreTransform).filter(Boolean);
+    let ignoreTransform = [].concat(opts.ignoreTransform).filter(Boolean);
     self._filterTransform = function (tr) {
         if (isArray(tr)) {
             return ignoreTransform.indexOf(tr[0]) === -1;
@@ -128,7 +129,7 @@ function Browserify (files, opts) {
 }
 
 Browserify.prototype.require = function (file, opts) {
-    var self = this;
+    let self = this;
     if (isArray(file)) {
         file.forEach(function (x) {
             if (typeof x === 'object') {
@@ -140,8 +141,8 @@ Browserify.prototype.require = function (file, opts) {
     }
     
     if (!opts) opts = {};
-    var basedir = defined(opts.basedir, self._options.basedir, process.cwd());
-    var expose = opts.expose;
+    let basedir = defined(opts.basedir, self._options.basedir, process.cwd());
+    let expose = opts.expose;
     if (file === expose && /^[\.]/.test(expose)) {
         expose = '/' + relativePath(basedir, expose);
     }
@@ -182,7 +183,7 @@ Browserify.prototype.require = function (file, opts) {
         return this;
     }
     
-    var row;
+    let row;
     if (typeof file === 'object') {
         row = xtend(file, opts);
     }
@@ -218,7 +219,7 @@ Browserify.prototype.require = function (file, opts) {
 };
 
 Browserify.prototype.add = function (file, opts) {
-    var self = this;
+    let self = this;
     if (!opts) opts = {};
     if (isArray(file)) {
         file.forEach(function (x) { self.add(x, opts) });
@@ -228,7 +229,7 @@ Browserify.prototype.add = function (file, opts) {
 };
 
 Browserify.prototype.external = function (file, opts) {
-    var self = this;
+    let self = this;
     if (isArray(file)) {
         file.forEach(function (f) {
             if (typeof f === 'object') {
@@ -239,11 +240,11 @@ Browserify.prototype.external = function (file, opts) {
         return this;
     }
     if (file && typeof file === 'object' && typeof file.bundle === 'function') {
-        var b = file;
+        let b = file;
         self._pending ++;
 
-        var bdeps = {};
-        var blabels = {};
+        let bdeps = {};
+        let blabels = {};
 
         b.on('label', function (prev, id) {
             self._external.push(id);
@@ -262,7 +263,7 @@ Browserify.prototype.external = function (file, opts) {
 
         self.on('dep', function (row) {
             Object.keys(row.deps).forEach(function (key) {
-                var prev = bdeps[key];
+                let prev = bdeps[key];
                 if (prev) {
                     var id = blabels[prev];
                     if (id) {
@@ -279,7 +280,7 @@ Browserify.prototype.external = function (file, opts) {
     }
     
     if (!opts) opts = {};
-    var basedir = defined(opts.basedir, process.cwd());
+    let basedir = defined(opts.basedir, process.cwd());
     this._external.push(file);
     this._external.push('/' + relativePath(basedir, file));
     return this;
@@ -288,13 +289,13 @@ Browserify.prototype.external = function (file, opts) {
 Browserify.prototype.exclude = function (file, opts) {
     if (!opts) opts = {};
     if (isArray(file)) {
-        var self = this;
+        let self = this;
         file.forEach(function(file) {
             self.exclude(file, opts);
         });
         return this;
     }
-    var basedir = defined(opts.basedir, process.cwd());
+    let basedir = defined(opts.basedir, process.cwd());
     this._exclude.push(file);
     this._exclude.push('/' + relativePath(basedir, file));
     return this;
@@ -303,13 +304,13 @@ Browserify.prototype.exclude = function (file, opts) {
 Browserify.prototype.ignore = function (file, opts) {
     if (!opts) opts = {};
     if (isArray(file)) {
-        var self = this;
+        let self = this;
         file.forEach(function(file) {
             self.ignore(file, opts);
         });
         return this;
     }
-    var basedir = defined(opts.basedir, process.cwd());
+    let basedir = defined(opts.basedir, process.cwd());
 
     // Handle relative paths
     if (file[0] === '.') {
@@ -322,7 +323,7 @@ Browserify.prototype.ignore = function (file, opts) {
 };
 
 Browserify.prototype.transform = function (tr, opts) {
-    var self = this;
+    let self = this;
     if (typeof opts === 'function' || typeof opts === 'string') {
         tr = [ opts, tr ];
     }
@@ -353,19 +354,19 @@ Browserify.prototype.transform = function (tr, opts) {
     if (!opts) opts = {};
     opts._flags = '_flags' in opts ? opts._flags : self._options;
     
-    var basedir = defined(opts.basedir, this._options.basedir, process.cwd());
-    var order = self._transformOrder ++;
+    let basedir = defined(opts.basedir, this._options.basedir, process.cwd());
+    let order = self._transformOrder ++;
     self._pending ++;
     self._transformPending ++;
 
-    var rec = {
+    let rec = {
         transform: tr,
         options: opts,
         global: opts.global
     };
 
     if (typeof tr === 'string') {
-        var topts = {
+        let topts = {
             basedir: basedir,
             paths: (self._options.paths || []).map(function (p) {
                 return path.resolve(basedir, p);
@@ -387,13 +388,13 @@ Browserify.prototype.plugin = function (p, opts) {
         p = p[0];
     }
     if (!opts) opts = {};
-    var basedir = defined(opts.basedir, this._options.basedir, process.cwd());
+    let basedir = defined(opts.basedir, this._options.basedir, process.cwd());
     if (typeof p === 'function') {
         p(this, opts);
     }
     else {
-        var pfile = resolve.sync(String(p), { basedir: basedir })
-        var f = require(pfile);
+        let pfile = resolve.sync(String(p), { basedir: basedir })
+        let f = require(pfile);
         if (typeof f !== 'function') {
             throw new Error('plugin ' + p + ' should export a function');
         }
@@ -403,7 +404,7 @@ Browserify.prototype.plugin = function (p, opts) {
 };
 
 Browserify.prototype._createPipeline = function (opts) {
-    var self = this;
+    let self = this;
     if (!opts) opts = {};
     this._mdeps = this._createDeps(opts);
     this._mdeps.on('file', function (file, id) {
@@ -419,14 +420,14 @@ Browserify.prototype._createPipeline = function (opts) {
         self.emit('transform', tr, file);
     });
     
-    var dopts = {
+    let dopts = {
         index: !opts.fullPaths && !opts.exposeAll,
         dedupe: opts.dedupe,
         expose: this._expose
     };
     this._bpack = bpack(xtend(opts, { raw: true }));
     
-    var pipeline = splicer.obj([
+    let pipeline = splicer.obj([
         'record', [ this._recorder() ],
         'deps', [ this._mdeps ],
         'json', [ this._json() ],
@@ -442,7 +443,7 @@ Browserify.prototype._createPipeline = function (opts) {
         'wrap', []
     ]);
     if (opts.exposeAll) {
-        var basedir = defined(opts.basedir, process.cwd());
+        let basedir = defined(opts.basedir, process.cwd());
         pipeline.get('deps').push(through.obj(function (row, enc, next) {
             if (self._external.indexOf(row.id) >= 0) return next();
             if (self._external.indexOf(row.file) >= 0) return next();
@@ -461,9 +462,9 @@ Browserify.prototype._createPipeline = function (opts) {
 };
 
 Browserify.prototype._createDeps = function (opts) {
-    var self = this;
-    var mopts = xtend(opts);
-    var basedir = defined(opts.basedir, process.cwd());
+    let self = this;
+    let mopts = xtend(opts);
+    let basedir = defined(opts.basedir, process.cwd());
 
     // Let mdeps populate these values since it will be resolving file paths
     // anyway.
@@ -514,7 +515,7 @@ Browserify.prototype._createDeps = function (opts) {
             }
             
             if (file) {
-                var ex = '/' + relativePath(basedir, file);
+                let ex = '/' + relativePath(basedir, file);
                 if (self._external.indexOf(ex) >= 0) {
                     return cb(null, ex);
                 }
@@ -568,8 +569,8 @@ Browserify.prototype._createDeps = function (opts) {
         });
     }
     
-    var no = [].concat(opts.noParse).filter(Boolean);
-    var absno = no.filter(function(x) {
+    let no = [].concat(opts.noParse).filter(Boolean);
+    let absno = no.filter(function(x) {
         return typeof x === 'string';
     }).map(function (x) {
         return path.resolve(basedir, x);
@@ -582,7 +583,7 @@ Browserify.prototype._createDeps = function (opts) {
         if (no.indexOf(file) >= 0) return through();
         if (absno.indexOf(file) >= 0) return through();
         
-        var parts = file.replace(/\\/g, '/').split('/node_modules/');
+        let parts = file.replace(/\\/g, '/').split('/node_modules/');
         for (var i = 0; i < no.length; i++) {
             if (typeof no[i] === 'function' && no[i](file)) {
                 return through();
@@ -598,17 +599,17 @@ Browserify.prototype._createDeps = function (opts) {
         if (opts.commondir === false && opts.builtins === false) {
           opts.insertGlobalVars = xtend({
             __dirname: function(file, basedir) {
-              var dir = path.dirname(path.relative(basedir, file));
+              let dir = path.dirname(path.relative(basedir, file));
               return 'require("path").join(__dirname,' + dir.split(path.sep).map(JSON.stringify).join(',') + ')';
             },
             __filename: function(file, basedir) {
-              var filename = path.relative(basedir, file);
+              let filename = path.relative(basedir, file);
               return 'require("path").join(__dirname,' + filename.split(path.sep).map(JSON.stringify).join(',') + ')';
             }
           }, opts.insertGlobalVars);
         }
         
-        var vars = xtend({
+        let vars = xtend({
             process: function () { return "require('_process')" },
         }, opts.insertGlobalVars);
         
@@ -631,8 +632,8 @@ Browserify.prototype._createDeps = function (opts) {
 };
 
 Browserify.prototype._recorder = function (opts) {
-    var self = this;
-    var ended = false;
+    let self = this;
+    let ended = false;
     this._recorded = [];
     
     if (!this._ticked) {
@@ -645,7 +646,7 @@ Browserify.prototype._recorder = function (opts) {
         });
     }
     
-    var stream = through.obj(write, end);
+    let stream = through.obj(write, end);
     return stream;
     
     function write (row, enc, next) {
@@ -699,9 +700,9 @@ Browserify.prototype._unshebang = function () {
 };
 
 Browserify.prototype._syntax = function () {
-    var self = this;
+    let self = this;
     return through.obj(function (row, enc, next) {
-        var h = shasum(row.source);
+        let h = shasum(row.source);
         if (typeof self._syntaxCache[h] === 'undefined') {
             var err = syntaxError(row.source, row.file || row.id);
             if (err) return this.emit('error', err);
@@ -737,11 +738,11 @@ Browserify.prototype._dedupe = function () {
 };
 
 Browserify.prototype._label = function (opts) {
-    var self = this;
-    var basedir = defined(opts.basedir, process.cwd());
+    let self = this;
+    let basedir = defined(opts.basedir, process.cwd());
     
     return through.obj(function (row, enc, next) {
-        var prev = row.id;
+        let prev = row.id;
 
         if (self._external.indexOf(row.id) >= 0) return next();
         if (self._external.indexOf('/' + relativePath(basedir, row.id)) >= 0) {
@@ -760,8 +761,8 @@ Browserify.prototype._label = function (opts) {
                 return;
             }
 
-            var afile = path.resolve(path.dirname(row.file), key);
-            var rfile = '/' + relativePath(basedir, afile);
+            let afile = path.resolve(path.dirname(row.file), key);
+            let rfile = '/' + relativePath(basedir, afile);
             if (self._external.indexOf(rfile) >= 0) {
                 row.deps[key] = rfile;
             }
@@ -773,8 +774,8 @@ Browserify.prototype._label = function (opts) {
                 return;
             }
             
-            for (var i = 0; i < self._extensions.length; i++) {
-                var ex = self._extensions[i];
+            for (let i = 0; i < self._extensions.length; i++) {
+                let ex = self._extensions[i];
                 if (self._external.indexOf(rfile + ex) >= 0) {
                     row.deps[key] = rfile + ex;
                     break;
@@ -791,7 +792,7 @@ Browserify.prototype._label = function (opts) {
 };
 
 Browserify.prototype._emitDeps = function () {
-    var self = this;
+    let self = this;
     return through.obj(function (row, enc, next) {
         self.emit('dep', row);
         this.push(row);
@@ -800,7 +801,7 @@ Browserify.prototype._emitDeps = function () {
 };
 
 Browserify.prototype._debug = function (opts) {
-    var basedir = defined(opts.basedir, process.cwd());
+    let basedir = defined(opts.basedir, process.cwd());
     return through.obj(function (row, enc, next) {
         if (opts.debug) {
             row.sourceRoot = 'file://localhost';
@@ -813,7 +814,7 @@ Browserify.prototype._debug = function (opts) {
 
 Browserify.prototype.reset = function (opts) {
     if (!opts) opts = {};
-    var hadExports = this._bpack.hasExports;
+    let hadExports = this._bpack.hasExports;
     this.pipeline = this._createPipeline(xtend(opts, this._options));
     this._bpack.hasExports = hadExports;
     this._entryOrder = 0;
@@ -822,7 +823,7 @@ Browserify.prototype.reset = function (opts) {
 };
 
 Browserify.prototype.bundle = function (cb) {
-    var self = this;
+    let self = this;
     if (cb && typeof cb === 'object') {
         throw new Error(
             'bundle() no longer accepts option arguments.\n'
@@ -830,13 +831,13 @@ Browserify.prototype.bundle = function (cb) {
         );
     }
     if (this._bundled) {
-        var recorded = this._recorded;
+        let recorded = this._recorded;
         this.reset();
         recorded.forEach(function (x) {
             self.pipeline.write(x);
         });
     }
-    var output = readonly(this.pipeline);
+    let output = readonly(this.pipeline);
     if (cb) {
         output.on('error', cb);
         output.pipe(concat(function (body) {
@@ -858,13 +859,13 @@ Browserify.prototype.bundle = function (cb) {
 
 function isStream (s) { return s && typeof s.pipe === 'function' }
 function isAbsolutePath (file) {
-    var regexp = process.platform === 'win32' ?
+    let regexp = process.platform === 'win32' ?
         /^\w:/ :
         /^\//;
     return regexp.test(file);
 }
 function isExternalModule (file) {
-    var regexp = process.platform === 'win32' ?
+    let regexp = process.platform === 'win32' ?
         /^(\.|\w:)/ :
         /^[\/.]/;
     return !regexp.test(file);
